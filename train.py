@@ -125,18 +125,14 @@ def main():
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # 1. Load Dataset
     train_dataset, test_dataset = get_dataset(args.dataset)
     
-    # Optional: limit dataset size for debugging/fast testing
     # train_dataset = train_dataset.select(range(5000)) 
     # test_dataset = test_dataset.select(range(500))
 
-    # 2. Load Tokenizer
     model_id = model_map[args.model]
     tokenizer = AutoTokenizer.from_pretrained(model_id)
 
-    # 3. Preprocess Data
     def tokenize_function(examples):
         return tokenizer(
             examples["text"], 
@@ -148,7 +144,6 @@ def main():
     tokenized_train = train_dataset.map(tokenize_function, batched=True)
     tokenized_eval = test_dataset.map(tokenize_function, batched=True)
 
-    # 4. Initialize Model
     model = AutoModelForSequenceClassification.from_pretrained(
         model_id, 
         num_labels=2
@@ -172,15 +167,15 @@ def main():
         print("\n--- Full Fine-Tuning Mode ---\n")
 
     model.to(device)
-    os.makedirs(f"./results", exist_ok=True)
-    os.makedirs(f"./logs", exist_ok=True)
+    os.makedirs(f"../results", exist_ok=True)
+    os.makedirs(f"../logs", exist_ok=True)
     output_dir_name = f"{args.model}_{args.dataset}_{args.peft}"
     if args.peft == "lora":
         output_dir_name += f"_r{args.rank}"
     # 5. Define Training Arguments
     training_args = TrainingArguments(
         fp16=True,
-        output_dir=f"./results/{output_dir_name}",
+        output_dir=f"../results/{output_dir_name}",
         eval_strategy="epoch",            # Evaluate at the end of every epoch
         save_strategy="epoch",            # Save checkpoint at the end of every epoch
         learning_rate=args.lr,
@@ -193,7 +188,7 @@ def main():
         metric_for_best_model="accuracy",
         logging_dir='./logs',
         logging_steps=50,
-        report_to="none"                  # Set to "wandb" if you use Weights & Biases
+        report_to="none"
     )
 
     # 6. Initialize Trainer
