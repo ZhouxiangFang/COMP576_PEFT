@@ -172,7 +172,7 @@ def main():
     output_dir_name = f"{args.model}_{args.dataset}_{args.peft}"
     if args.peft == "lora":
         output_dir_name += f"_r{args.rank}"
-    # 5. Define Training Arguments
+   
     training_args = TrainingArguments(
         fp16=True,
         output_dir=f"../results/{output_dir_name}",
@@ -184,14 +184,13 @@ def main():
         per_device_eval_batch_size=args.batch_size,
         num_train_epochs=args.epochs,
         weight_decay=0.01,
-        load_best_model_at_end=False,      # Load the best model when finished
+        load_best_model_at_end=False,      # whether to Load the best model when finished
         metric_for_best_model="accuracy",
-        logging_dir='./logs',
+        logging_dir='../logs',
         logging_steps=50,
         report_to="none"
     )
 
-    # 6. Initialize Trainer
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
     trainer = Trainer(
@@ -204,12 +203,10 @@ def main():
         compute_metrics=compute_metrics,
     )
 
-    # 7. Train
     start_time = time.time()
     trainer.train()
     end_time = time.time()
     
-    # 8. Evaluate
     eval_results = trainer.evaluate()
     
     print_config(args)
