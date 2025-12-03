@@ -1,4 +1,5 @@
 import argparse
+import os
 import numpy as np
 import evaluate
 from datasets import load_dataset
@@ -12,6 +13,7 @@ from transformers import (
 )
 import torch
 import time
+from peft import get_peft_model, LoraConfig, TaskType
 
 model_map = {
     "bert": "google-bert/bert-base-uncased",
@@ -86,24 +88,24 @@ def main():
         "--epochs", 
         type=int, 
         default=5, 
-        help="Number of epochs"
+        help="Number of epochs for training"
     )
     parser.add_argument(
         "--batch_size", 
         type=int, 
-        default=16, 
-        help="Batch size"
+        default=32, 
+        help="Batch size for training"
     )
     parser.add_argument(
-        "--learning_rate", 
+        "--lr", 
         type=float, 
-        default=5e-6, 
+        default=2e-5, 
         help="Learning rate"
     )
     parser.add_argument(
         "--max_length", 
         type=int, 
-        default=512, 
+        default=256, 
         help="Max token length"
     )
     parser.add_argument(
@@ -151,19 +153,43 @@ def main():
         model_id, 
         num_labels=2
     )
-    model.to(device)
 
+    if args.peft == "lora":
+        print(f"\n--- Applying LoRA (Rank: {args.rank}) ---")
+        peft_config = LoraConfig(
+            task_type=TaskType.SEQ_CLS,
+            inference_mode=False, 
+            r=args.rank,             
+            lora_alpha=args.rank * 2, 
+            lora_dropout=0.1
+        )
+        model = get_peft_model(model, peft_config)
+        model.print_trainable_parameters()
+        print("------------------------------------------\n")
+    elif args.peft == "prefix": # to haotian: feel free to change this
+        pass
+    else:
+        print("\n--- Full Fine-Tuning Mode ---\n")
+
+    model.to(device)
+    os.makedirs(f"./results", exist_ok=True)
+    os.makedirs(f"./logs", exist_ok=True)
+    output_dir_name = f"{args.model}_{args.dataset}_{args.peft}"
+    if args.peft == "lora":
+        output_dir_name += f"_r{args.rank}"
     # 5. Define Training Arguments
     training_args = TrainingArguments(
-        output_dir=f"./results_{args.model_name}_{args.dataset}",
+        fp16=True,
+        output_dir=f"./results/{output_dir_name}",
         eval_strategy="epoch",            # Evaluate at the end of every epoch
         save_strategy="epoch",            # Save checkpoint at the end of every epoch
-        learning_rate=args.learning_rate,
+        learning_rate=args.lr,
         per_device_train_batch_size=args.batch_size,
+        gradient_accumulation_steps=4,
         per_device_eval_batch_size=args.batch_size,
         num_train_epochs=args.epochs,
         weight_decay=0.01,
-        load_best_model_at_end=True,      # Load the best model when finished
+        load_best_model_at_end=False,      # Load the best model when finished
         metric_for_best_model="accuracy",
         logging_dir='./logs',
         logging_steps=50,
