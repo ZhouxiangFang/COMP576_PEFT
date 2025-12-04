@@ -1,0 +1,141 @@
+
+TABLE 1: COMPLETE RESULTS - ALL METHODS
+================================================================================
+Method              Hyperparameter   Accuracy   F1 Score   Time(s)   Parameters    % of Full
+--------------------------------------------------------------------------------------------
+Full Fine-Tuning    -                92.04%     92.12%     196.5     110,000,000   100.00%
+LoRA                rank=128         88.97%     89.17%     186.7     4,720,130     4.29%
+Prompt Tuning*      length=20        88.25%     88.24%     164.0     16,898        0.015%
+LoRA                rank=64          88.14%     88.32%     168.3     2,360,834     2.15%
+Prompt Tuning*      length=50        87.81%     88.23%     177.8     39,938        0.036%
+Prompt Tuning*      length=10        87.76%     87.59%     167.1     9,218         0.0084%
+LoRA                rank=32          86.91%     87.10%     167.7     1,181,186     1.07%
+LoRA                rank=16          85.10%     85.29%     174.6     591,362       0.54%
+LoRA                rank=8           80.80%     81.60%     183.7     296,450       0.27%
+
+
+================================================================================
+TABLE 2: FULL FINE-TUNING BASELINE
+================================================================================
+Method               Accuracy   F1 Score   Time(s)   Parameters
+----------------------------------------------------------------------
+Full Fine-Tuning     92.04%     92.12%     196.5     110,000,000
+
+================================================================================
+TABLE 3: LORA ABLATION STUDY
+================================================================================
+Rank    Accuracy   F1 Score   Time(s)   Parameters    % of Full   Improvement
+--------------------------------------------------------------------------------
+8       80.80%     81.60%     183.7     296,450       0.270%      -
+16      85.10%     85.29%     174.6     591,362       0.538%      +4.30%
+32      86.91%     87.10%     167.7     1,181,186     1.074%      +1.81%
+64      88.14%     88.32%     168.3     2,360,834     2.146%      +1.23%
+128     88.97%     89.17%     186.7     4,720,130     4.291%      +0.83%
+
+Key Finding: Diminishing returns at higher ranks
+
+================================================================================
+TABLE 4: PROMPT TUNING ABLATION STUDY (HAOTIAN XIA'S WORK)
+================================================================================
+Length  Accuracy   F1 Score   Time(s)   Parameters    % of Full
+--------------------------------------------------------------------
+10      87.76%     87.59%     167.1     9,218         0.0084%
+20      88.25%     88.24%     164.0     16,898        0.0154%
+50      87.81%     88.23%     177.8     39,938        0.0363%
+
+Best Configuration: Length = 20 (optimal accuracy and speed)
+
+================================================================================
+TABLE 5: TOP 3 METHODS COMPARISON
+================================================================================
+Rank  Method                   Accuracy   Parameters   Training Time   Efficiency
+----------------------------------------------------------------------------------
+1st   Full Fine-Tuning         92.04%     110,000,000  196.5s         Baseline
+2nd   LoRA (rank=128)          88.97%     4,720,130    186.7s         Good
+3rd   Prompt Tuning (len=20)*  88.25%     16,898       164.0s         EXCELLENT
+
+
+
+================================================================================
+TABLE 6: PARAMETER EFFICIENCY COMPARISON (AT ~88% ACCURACY)
+================================================================================
+Method                   Accuracy   Parameters    Relative Size   Speedup
+--------------------------------------------------------------------------
+Full Fine-Tuning         92.04%     110,000,000   100.0%          0%
+LoRA (rank=128)          88.97%     4,720,130     4.3%            +5.0%
+LoRA (rank=64)           88.14%     2,360,834     2.1%            +14.3%
+Prompt Tuning (len=20)*  88.25%     16,898        0.015%          +16.5%
+
+
+Winner: Prompt Tuning (279x fewer parameters than LoRA rank=64)
+
+================================================================================
+TABLE 7: TRAINING SPEED RANKING (FASTEST TO SLOWEST)
+================================================================================
+Rank  Method                   Time(s)   Speedup vs Baseline
+------------------------------------------------------------
+1st   Prompt Tuning (len=20)*  164.0     +16.5% (FASTEST)
+2nd   Prompt Tuning (len=10)*  167.1     +15.0%
+3rd   LoRA (rank=32)           167.7     +14.7%
+4th   LoRA (rank=64)           168.3     +14.3%
+5th   LoRA (rank=16)           174.6     +11.1%
+6th   Prompt Tuning (len=50)*  177.8     +9.5%
+7th   LoRA (rank=8)            183.7     +6.5%
+8th   LoRA (rank=128)          186.7     +5.0%
+9th   Full Fine-Tuning         196.5     Baseline
+
+
+
+================================================================================
+TABLE 8: MULTI-TASK DEPLOYMENT (100 TASKS)
+================================================================================
+Method                   Storage per Task   Total Storage   Savings vs Full SFT
+--------------------------------------------------------------------------------
+Full Fine-Tuning         440 MB            44.0 GB         0% (baseline)
+LoRA (rank=64)          440 MB + 9.5 MB   1.39 GB         96.8%
+Prompt Tuning (len=20)*  440 MB + 68 KB    447 MB          99.0%
+
+
+Winner: Prompt Tuning saves 99.0% storage!
+
+================================================================================
+TABLE 9: ACCURACY VS PARAMETERS SUMMARY
+================================================================================
+Parameters Range     Best Method             Accuracy   Notes
+----------------------------------------------------------------
+< 50K               Prompt Tuning (len=20)*  88.25%    Extremely efficient
+50K - 1M            LoRA (rank=8-16)         80-85%    Moderate efficiency
+1M - 5M             LoRA (rank=32-128)       87-89%    Good tradeoff
+> 100M              Full Fine-Tuning         92.04%    Maximum accuracy
+
+
+
+================================================================================
+KEY FINDINGS SUMMARY
+================================================================================
+
+PROMPT TUNING (Haotian Xia's Implementation):
+- Best Configuration: Length = 20 virtual tokens
+- Accuracy: 88.25% (only 3.79% below Full Fine-Tuning)
+- Parameters: 16,898 (0.015% of full model)
+- Training Time: 164.0s (FASTEST method)
+- Ranking: 3rd overall (beats LoRA rank=8, 16, 32)
+
+ADVANTAGES:
+✓ Extreme parameter efficiency (6,510x fewer than Full Fine-Tuning)
+✓ Fastest training speed (16.5% faster than baseline)
+✓ Ideal for multi-task deployment (99% storage savings)
+✓ Near-instant task switching
+
+LORA FINDINGS:
+- Best Configuration: Rank 32-64 (best accuracy-parameter tradeoff)
+- Diminishing returns observed at higher ranks
+- Rank 128 achieves highest accuracy but uses 279x more parameters than Prompt Tuning
+
+RECOMMENDATIONS:
+- Maximum accuracy: Full Fine-Tuning (92.04%)
+- Best efficiency: Prompt Tuning length=20 (88.25%, 0.015% params)
+- Balanced tradeoff: LoRA rank=32-64 (87-88%, 1-2% params)
+- Multi-task scenarios: Prompt Tuning (99% storage savings)
+
+================================================================================
