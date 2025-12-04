@@ -141,8 +141,8 @@ def main():
     train_dataset, test_dataset = get_dataset(args.dataset)
 
     # Optionally subsample for faster testing (comment out for full training)
-    train_dataset = train_dataset.select(range(5000))
-    test_dataset = test_dataset.select(range(500))
+    # train_dataset = train_dataset.select(range(5000))
+    # test_dataset = test_dataset.select(range(500))
 
     model_id = model_map[args.model]
     tokenizer = AutoTokenizer.from_pretrained(model_id)
@@ -199,7 +199,7 @@ def main():
     model.to(device)
     os.makedirs(f"../results", exist_ok=True)
     os.makedirs(f"../logs", exist_ok=True)
-    output_dir_name = f"{args.model}_{args.dataset}_{args.peft}_{args.lr}"
+    output_dir_name = f"{args.model}_{args.dataset}_{args.peft}_lr{args.lr}_epoch{args.epochs}"
     if args.peft == "lora":
         output_dir_name += f"_r{args.rank}"
     elif args.peft == "prompt":
