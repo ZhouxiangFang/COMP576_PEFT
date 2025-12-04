@@ -43,11 +43,17 @@ def get_dataset(dataset_name):
     print(f"Loading {dataset_name} dataset...")
     raw_dataset = load_dataset(dataset_map[dataset_name])
     train_dataset = raw_dataset["train"]
-    test_dataset = raw_dataset["test"]
+    if "validation" in raw_dataset:
+        test_dataset = raw_dataset["validation"]
+    else:
+        test_dataset = raw_dataset["test"]
 
     if dataset_name.lower() == "sst2":
         train_dataset = train_dataset.rename_column("sentence", "text")
         test_dataset = test_dataset.rename_column("sentence", "text")
+
+        # train_dataset = train_dataset.remove_columns(["idx"])
+        # test_dataset = test_dataset.remove_columns(["idx"])
 
     return train_dataset, test_dataset
 
@@ -105,7 +111,7 @@ def main():
     parser.add_argument(
         "--lr",
         type=float,
-        default=2e-5,
+        default=5e-6,
         help="Learning rate"
     )
     parser.add_argument(
@@ -127,15 +133,16 @@ def main():
     print_config(args)
 
     # Set seed for reproducibility
-    set_seed(args.seed)
+    # set_seed(args.seed)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using device: {device}")
 
     train_dataset, test_dataset = get_dataset(args.dataset)
 
     # Optionally subsample for faster testing (comment out for full training)
-    # train_dataset = train_dataset.select(range(5000))
-    # test_dataset = test_dataset.select(range(500))
+    train_dataset = train_dataset.select(range(5000))
+    test_dataset = test_dataset.select(range(500))
 
     model_id = model_map[args.model]
     tokenizer = AutoTokenizer.from_pretrained(model_id)
@@ -150,6 +157,12 @@ def main():
 
     tokenized_train = train_dataset.map(tokenize_function, batched=True)
     tokenized_eval = test_dataset.map(tokenize_function, batched=True)
+
+    unique_train_labels = set(tokenized_train["label"])
+    unique_eval_labels = set(tokenized_eval["label"])
+
+    print(f"Unique Training Labels: {unique_train_labels}")
+    print(f"Unique Eval Labels: {unique_eval_labels}")
 
     model = AutoModelForSequenceClassification.from_pretrained(
         model_id,
@@ -180,31 +193,25 @@ def main():
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
         print("------------------------------------------\n")
-
-    elif args.peft == "prefix":
-        # Placeholder for Prefix Tuning (can implement later if needed)
-        print("\n--- Prefix Tuning not implemented yet ---\n")
-        pass
     else:
         print("\n--- Full Fine-Tuning Mode ---\n")
 
     model.to(device)
     os.makedirs(f"../results", exist_ok=True)
     os.makedirs(f"../logs", exist_ok=True)
-    output_dir_name = f"{args.model}_{args.dataset}_{args.peft}"
+    output_dir_name = f"{args.model}_{args.dataset}_{args.peft}_{args.lr}"
     if args.peft == "lora":
         output_dir_name += f"_r{args.rank}"
     elif args.peft == "prompt":
         output_dir_name += f"_len{args.prompt_length}"
 
     training_args = TrainingArguments(
-        fp16=True,
+        bf16=True,
         output_dir=f"../results/{output_dir_name}",
         eval_strategy="epoch",            # Evaluate at the end of every epoch
         save_strategy="epoch",            # Save checkpoint at the end of every epoch
         learning_rate=args.lr,
         per_device_train_batch_size=args.batch_size,
-        gradient_accumulation_steps=4,
         per_device_eval_batch_size=args.batch_size,
         num_train_epochs=args.epochs,
         weight_decay=0.01,
