@@ -199,7 +199,6 @@ def main():
 
     model.to(device)
     os.makedirs(f"../results", exist_ok=True)
-    os.makedirs(f"../logs", exist_ok=True)
     output_dir_name = f"{args.model}_{args.dataset}_{args.peft}_lr{args.lr}_epoch{args.epochs}"
     if args.peft == "lora":
         output_dir_name += f"_r{args.rank}"
