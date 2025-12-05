@@ -210,7 +210,7 @@ def main():
         bf16=True,
         output_dir=f"../results/{output_dir_name}",
         eval_strategy="epoch",            # Evaluate at the end of every epoch
-        save_strategy="epoch",            # Save checkpoint at the end of every epoch
+        save_strategy="no",            # do not save model checkpoints
         learning_rate=args.lr,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
