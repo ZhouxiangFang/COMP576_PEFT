@@ -82,7 +82,7 @@ def main():
         "--peft",
         type=str,
         default="none",
-        help="PEFT method (e.g., none, lora, prefix, prompt)"
+        help="PEFT method (e.g., none, lora, prompt)"
     )
     parser.add_argument(
         "--rank",
@@ -99,7 +99,7 @@ def main():
     parser.add_argument(
         "--epochs",
         type=int,
-        default=5,
+        default=3,
         help="Number of epochs for training"
     )
     parser.add_argument(
